@@ -1,0 +1,1422 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Talento Local | Plataforma Profesional</title>
+  <!-- OpenLayers CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v7.4.0/ol.css">
+  <!-- Map Library: OpenLayers as global script -->
+  <script src="https://cdn.jsdelivr.net/npm/ol@v7.4.0/dist/ol.js"></script>
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+  <style>
+    :root {
+      --primary: #0f172a;
+      --primary-dark: #0b1120;
+      --secondary: #0ea5e9;
+      --accent: #f59e0b;
+      --light: #f8fafc;
+      --gray-100: #f1f5f9;
+      --gray-200: #e2e8f0;
+      --gray-400: #94a3b8;
+      --gray-600: #475569;
+      --gray-800: #1e293b;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --shadow: 0 4px 12px rgba(0,0,0,0.08);
+      --shadow-lg: 0 10px 25px rgba(0,0,0,0.15);
+      --radius: 16px;
+      --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
+      background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+      color: var(--gray-800);
+      line-height: 1.6;
+    }
+    #app {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 0 32px;
+    }
+    /* Header & Navigation */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 32px 0;
+      margin-bottom: 48px;
+      border-bottom: 1px solid rgba(14, 165, 233, 0.3);
+      background-color: #e0f2fe;
+    }
+    .logo {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .logo-icon {
+      background: linear-gradient(135deg, var(--secondary) 0%, #0284c7 100%);
+      color: white;
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 1.4rem;
+      box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+    }
+    nav ul {
+      display: flex;
+      list-style: none;
+      gap: 24px;
+    }
+    nav a {
+      text-decoration: none;
+      color: white;
+      font-weight: 600;
+      padding: 12px 24px;
+      border-radius: var(--radius);
+      transition: var(--transition);
+      font-size: 1.05rem;
+      position: relative;
+      background: var(--secondary);
+      border: 1px solid rgba(14, 165, 233, 0.4);
+    }
+    nav a:hover {
+      background: #0284c7;
+      transform: translateY(-2px);
+    }
+    nav a.active {
+      color: white;
+      background: var(--secondary);
+      border: none;
+      box-shadow: 0 4px 12px rgba(14, 165, 233, 0.4);
+    }
+
+    /* Language selector */
+    .language-selector {
+      position: absolute;
+      right: 32px;
+      top: 32px;
+    }
+
+    /* Views */
+    .view {
+      display: none;
+    }
+    .active {
+      display: block;
+      animation: fadeIn 0.5s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Rest of your existing styles remain unchanged... */
+    /* (I kept them all for completeness — no changes needed below) */
+    .hero {
+      text-align: center;
+      margin-bottom: 56px;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .hero h1 {
+      font-size: 3.2rem;
+      font-weight: 800;
+      color: var(--primary-dark);
+      margin-bottom: 20px;
+      line-height: 1.2;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--gray-800) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero p {
+      color: var(--gray-600);
+      font-size: 1.3rem;
+      margin-bottom: 32px;
+      font-weight: 500;
+    }
+    .search-bar {
+      max-width: 700px;
+      margin: 0 auto 40px;
+      position: relative;
+    }
+    .search-bar input {
+      width: 100%;
+      padding: 18px 24px;
+      border-radius: var(--radius);
+      border: 2px solid var(--gray-200);
+      font-size: 1.1rem;
+      transition: var(--transition);
+    }
+    .search-bar input:focus {
+      outline: none;
+      border-color: var(--secondary);
+      box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.15);
+    }
+    #map {
+      width: 100%;
+      height: 650px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-lg);
+      margin: 36px 0;
+      border: 1px solid rgba(255,255,255,0.5);
+      backdrop-filter: blur(10px);
+    }
+    .radio-display {
+      position: absolute;
+      top: 32px;
+      right: 32px;
+      background: linear-gradient(135deg, white 0%, #f8fafc 100%);
+      padding: 16px 24px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-lg);
+      font-weight: 700;
+      color: var(--primary-dark);
+      z-index: 1000;
+      display: none;
+      border: 1px solid rgba(0,0,0,0.05);
+    }
+    .radio-display.active {
+      display: block;
+    }
+    .instructions {
+      background: linear-gradient(135deg, white 0%, #f8fafc 100%);
+      padding: 28px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 32px;
+      border-left: 4px solid var(--secondary);
+    }
+    .instructions h3 {
+      color: var(--primary-dark);
+      margin-bottom: 16px;
+      font-size: 1.4rem;
+    }
+    .instructions ul {
+      padding-left: 28px;
+      color: var(--gray-600);
+    }
+    .instructions li {
+      margin-bottom: 12px;
+      font-size: 1.05rem;
+    }
+    .map-controls {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      margin: 28px 0;
+      flex-wrap: wrap;
+    }
+    .control-btn {
+      background: linear-gradient(135deg, var(--secondary) 0%, #0284c7 100%);
+      color: white;
+      border: none;
+      padding: 14px 28px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-weight: 700;
+      transition: var(--transition);
+      min-width: 140px;
+      font-size: 1.1rem;
+      box-shadow: 0 6px 16px rgba(14, 165, 233, 0.3);
+    }
+    .control-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(14, 165, 233, 0.4);
+    }
+    .control-btn:disabled {
+      background: var(--gray-400);
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    .form-container {
+      background: linear-gradient(135deg, white 0%, #f8fafc 100%);
+      padding: 40px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-lg);
+      max-width: 700px;
+      margin: 0 auto;
+      border: 1px solid rgba(0,0,0,0.05);
+    }
+    .form-group {
+      margin-bottom: 28px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 12px;
+      font-weight: 700;
+      color: var(--primary-dark);
+      font-size: 1.1rem;
+    }
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 16px;
+      border: 2px solid var(--gray-200);
+      border-radius: var(--radius);
+      font-size: 1.05rem;
+      transition: var(--transition);
+      background: white;
+    }
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--secondary);
+      box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.15);
+    }
+    .form-actions {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      margin-top: 40px;
+    }
+    .btn {
+      display: inline-block;
+      background: linear-gradient(135deg, var(--secondary) 0%, #0284c7 100%);
+      color: white;
+      padding: 16px 36px;
+      border-radius: var(--radius);
+      text-decoration: none;
+      font-weight: 700;
+      transition: var(--transition);
+      border: none;
+      cursor: pointer;
+      font-size: 1.15rem;
+      text-align: center;
+      box-shadow: 0 6px 16px rgba(14, 165, 233, 0.3);
+    }
+    .btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(14, 165, 233, 0.4);
+    }
+    .btn-outline {
+      background: transparent;
+      border: 2px solid var(--secondary);
+      color: var(--secondary);
+    }
+    .btn-outline:hover {
+      background: linear-gradient(135deg, var(--secondary) 0%, #0284c7 100%);
+      color: white;
+    }
+    .map-info {
+      background: linear-gradient(135deg, white 0%, #f8fafc 100%);
+      padding: 20px;
+      border-radius: var(--radius);
+      margin-top: 28px;
+      font-size: 1.05rem;
+      border: 1px solid rgba(0,0,0,0.05);
+    }
+    .map-info p {
+      margin: 8px 0;
+      font-weight: 600;
+    }
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 32px;
+      margin-top: 32px;
+    }
+    .product-card {
+      background: linear-gradient(135deg, white 0%, #f8fafc 100%);
+      border-radius: var(--radius);
+      padding: 32px;
+      box-shadow: var(--shadow-lg);
+      border: 1px solid rgba(0,0,0,0.05);
+      transition: var(--transition);
+    }
+    .product-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 12px 30px rgba(0,0,0,0.18);
+    }
+    .product-image {
+      width: 100%;
+      height: 200px;
+      background: linear-gradient(135deg, var(--gray-100) 0%, white 100%);
+      border-radius: var(--radius);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--gray-400);
+      font-size: 1rem;
+      border: 1px solid rgba(0,0,0,0.03);
+    }
+    .product-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: var(--radius);
+    }
+    .product-type {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+    .product-type.physical {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.1) 100%);
+      color: var(--success);
+    }
+    .product-type.digital {
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.15) 0%, rgba(14, 165, 233, 0.1) 100%);
+      color: var(--secondary);
+    }
+    .product-card h4 {
+      margin-bottom: 12px;
+      color: var(--primary-dark);
+      font-size: 1.3rem;
+    }
+    .product-price {
+      font-weight: 800;
+      color: var(--accent);
+      margin: 12px 0;
+      font-size: 1.4rem;
+    }
+    .product-actions {
+      margin-top: 20px;
+      display: flex;
+      gap: 12px;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 28px;
+      margin: 48px 0;
+    }
+    .stat-card {
+      background: linear-gradient(135deg, white 0%, #f8fafc 100%);
+      padding: 32px;
+      border-radius: var(--radius);
+      text-align: center;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(0,0,0,0.05);
+    }
+    .stat-card .value {
+      font-size: 2.8rem;
+      font-weight: 800;
+      color: var(--primary);
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, var(--secondary) 0%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .stat-card .label {
+      color: var(--gray-600);
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+    footer {
+      text-align: center;
+      margin-top: 80px;
+      padding: 40px 0;
+      color: var(--gray-600);
+      font-size: 1.1rem;
+      border-top: 1px solid rgba(255,255,255,0.3);
+      backdrop-filter: blur(10px);
+      background: rgba(255,255,255,0.1);
+    }
+    @media (max-width: 900px) {
+      header {
+        flex-direction: column;
+        gap: 28px;
+      }
+      .language-selector {
+        position: static;
+        right: auto;
+        top: auto;
+      }
+      nav ul {
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      #map {
+        height: 500px;
+      }
+      .hero h1 {
+        font-size: 2.6rem;
+      }
+    }
+    @media (max-width: 600px) {
+      nav a {
+        padding: 10px 18px;
+        font-size: 0.95rem;
+      }
+      #map {
+        height: 400px;
+      }
+      .form-container {
+        padding: 28px;
+      }
+      .hero h1 {
+        font-size: 2.2rem;
+      }
+      .hero p {
+        font-size: 1.1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <header>
+      <div class="logo">
+        <div class="logo-icon">TL</div>
+        Talento<span style="background: linear-gradient(135deg, var(--secondary) 0%, var(--accent) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Local</span>
+      </div>
+      <div class="language-selector">
+        <select id="lang-select" style="padding: 8px; border-radius: 8px; border: 1px solid var(--gray-400); background: white; color: var(--gray-800);">
+          <option value="es">Español</option>
+          <option value="en">English</option>
+          <option value="pt">Português</option>
+        </select>
+      </div>
+      <nav>
+        <ul>
+          <li><a href="#" id="nav-home" class="nav-link active">Plataforma</a></li>
+          <li><a href="#" id="nav-talents" class="nav-link">Talentos</a></li>
+          <li><a href="#" id="nav-register" class="nav-link">Unirse</a></li>
+          <li><a href="#" id="nav-profile" class="nav-link" style="display: none;">Mi Perfil</a></li>
+          <li><a href="#" id="nav-login" class="nav-link">Iniciar Sesión</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <!-- Home View -->
+    <div id="home-view" class="view active">
+      <div class="hero">
+        <h1>La Plataforma Definitiva para Talentos Profesionales</h1>
+        <p>Conectamos a los mejores profesionales con oportunidades reales en todo el país.</p>
+      </div>
+      <div class="search-bar">
+        <input type="text" id="search-input" placeholder="Buscar por profesión, nombre o especialidad...">
+      </div>
+      <div class="stats">
+        <div class="stat-card">
+          <div class="value">10,000+</div>
+          <div class="label">Profesionales Activos</div>
+        </div>
+        <div class="stat-card">
+          <div class="value">500+</div>
+          <div class="label">Especialidades</div>
+        </div>
+        <div class="stat-card">
+          <div class="value">99.8%</div>
+          <div class="label">Satisfacción</div>
+        </div>
+        <div class="stat-card">
+          <div class="value">24/7</div>
+          <div class="label">Soporte Premium</div>
+        </div>
+      </div>
+      <div class="instructions">
+        <h3>Defina su Zona de Operaciones</h3>
+        <ul>
+          <li><strong>Haga clic</strong> en el mapa para establecer el centro de su área de servicio</li>
+          <li><strong>Ajuste el radio</strong> utilizando los controles para definir su cobertura geográfica</li>
+          <li><strong>El sistema inteligente</strong> mostrará su disponibilidad en tiempo real a clientes potenciales</li>
+        </ul>
+      </div>
+      <div id="map-container" style="position: relative;">
+        <div id="map"></div>
+        <div id="radio-display" class="radio-display">Radio: <span id="radio-value">0</span> m</div>
+      </div>
+      <div class="map-controls">
+        <button class="control-btn" id="decreaseRadius" disabled>Reducir Radio</button>
+        <button class="control-btn" id="increaseRadius" disabled>Ampliar Radio</button>
+      </div>
+      <div class="map-info">
+        <p><strong>Ubicación:</strong> <span id="location-coords">No definida</span></p>
+        <p><strong>Radio de cobertura:</strong> <span id="coverage-radius">0</span> metros</p>
+      </div>
+    </div>
+
+    <!-- Talents View -->
+    <div id="talents-view" class="view">
+      <div class="hero">
+        <h1>Directorio de Talentos Certificados</h1>
+        <p>Profesionales verificados, calificados y listos para servirle con excelencia.</p>
+      </div>
+      <div class="search-bar">
+        <input type="text" id="talents-search" placeholder="Buscar talentos por nombre, profesión o ubicación...">
+      </div>
+      <div id="talents-list" class="products-grid">
+        <!-- Talents will be loaded here -->
+      </div>
+    </div>
+
+    <!-- Register View -->
+    <div id="register-view" class="view">
+      <div class="hero">
+        <h1>Únase a la Red de Élite</h1>
+        <p>Registre su perfil profesional y acceda a oportunidades exclusivas en todo el territorio nacional.</p>
+      </div>
+      <div class="form-container">
+        <form id="talentForm">
+          <div class="form-group">
+            <label for="fullName">Nombre Completo *</label>
+            <input type="text" id="fullName" required>
+          </div>
+          <div class="form-group">
+            <label for="profession">Especialidad Profesional *</label>
+            <select id="profession" required>
+              <option value="">Seleccione su especialidad</option>
+              <option value="carpintero">Carpintería de Alta Gama</option>
+              <option value="electricista">Electricista Certificado</option>
+              <option value="plomero">Plomería Profesional</option>
+              <option value="diseñador">Diseño Gráfico Premium</option>
+              <option value="chef">Gastronomía de Autor</option>
+              <option value="musico">Producción Musical</option>
+              <option value="fotografo">Fotografía Profesional</option>
+              <option value="otros">Otra Especialidad</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="phone">Teléfono Corporativo *</label>
+            <input type="tel" id="phone" required>
+          </div>
+          <div class="form-group">
+            <label for="email">Correo Profesional *</label>
+            <input type="email" id="email" required>
+          </div>
+          <div class="form-group">
+            <label for="description">Perfil Profesional (opcional)</label>
+            <textarea id="description" rows="4" placeholder="Describa su experiencia, certificaciones y enfoque profesional..."></textarea>
+          </div>
+          <div class="form-group">
+            <label>Zona de Operaciones</label>
+            <div class="map-info">
+              <p><strong>Ubicación:</strong> <span id="form-location">No definida</span></p>
+              <p><strong>Radio de cobertura:</strong> <span id="form-radius">0</span> metros</p>
+              <p class="warning-text">* Defina su ubicación en la Plataforma antes de registrar</p>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn">Registrar Perfil Profesional</button>
+            <button type="button" class="btn btn-outline" id="define-location-btn">Definir Ubicación</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Profile View -->
+    <div id="profile-view" class="view">
+      <div class="hero">
+        <h1>Mi Perfil Profesional</h1>
+        <p>Gestione su información, productos y configuración de verificación.</p>
+      </div>
+      <div class="form-container">
+        <div style="text-align: center; margin-bottom: 24px;">
+          <div id="profile-avatar" style="display: inline-block; width: 120px; height: 120px; border-radius: 50%; background: var(--gray-200); margin-bottom: 16px; cursor: pointer;">
+          </div>
+          <h3 id="profile-name">Nombre del Profesional</h3>
+          <p id="profile-email">email@profesional.com</p>
+        </div>
+        <form id="profileForm">
+          <div class="form-group">
+            <label for="profileFullName">Nombre Completo *</label>
+            <input type="text" id="profileFullName" required>
+          </div>
+          <div class="form-group">
+            <label for="profileProfession">Especialidad Profesional *</label>
+            <select id="profileProfession" required>
+              <option value="">Seleccione su especialidad</option>
+              <option value="carpintero">Carpintería de Alta Gama</option>
+              <option value="electricista">Electricista Certificado</option>
+              <option value="plomero">Plomería Profesional</option>
+              <option value="diseñador">Diseño Gráfico Premium</option>
+              <option value="chef">Gastronomía de Autor</option>
+              <option value="musico">Producción Musical</option>
+              <option value="fotografo">Fotografía Profesional</option>
+              <option value="otros">Otra Especialidad</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="profilePhone">Teléfono Corporativo *</label>
+            <input type="tel" id="profilePhone" required>
+          </div>
+          <div class="form-group">
+            <label for="profileDescription">Perfil Profesional</label>
+            <textarea id="profileDescription" rows="4"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Promoción Destacada</label>
+            <div class="boost-section">
+              <p><strong>Estado actual:</strong> <span id="boost-status">No activo</span></p>
+              <div class="boost-options">
+                <button type="button" class="btn btn-outline" id="boost-7">7 días - $29.99</button>
+                <button type="button" class="btn btn-outline" id="boost-30">30 días - $99.99</button>
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Analítica Premium</label>
+            <div class="analytics-section">
+              <p><strong>Vistas en los últimos 30 días:</strong> <span id="analytics-views">0</span></p>
+              <p><strong>Mensajes recibidos:</strong> <span id="analytics-messages">0</span></p>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn">Guardar Cambios</button>
+            <button type="button" class="btn btn-outline" id="logout-btn">Cerrar Sesión</button>
+          </div>
+        </form>
+      </div>
+      <h3 style="margin: 48px 0 24px; text-align: center;">Mis Productos</h3>
+      <div id="my-products-list" class="products-grid">
+        <!-- User's products will be loaded here -->
+      </div>
+    </div>
+
+    <!-- Login View -->
+    <div id="login-view" class="view">
+      <div class="hero">
+        <h1>Iniciar Sesión en Talento Local</h1>
+        <p>Acceda a su perfil profesional y gestione sus servicios y productos.</p>
+      </div>
+      <div class="form-container">
+        <form id="loginForm">
+          <div class="form-group">
+            <label for="loginEmail">Correo Electrónico *</label>
+            <input type="email" id="loginEmail" required>
+          </div>
+          <div class="form-group">
+            <label for="loginPassword">Contraseña *</label>
+            <input type="password" id="loginPassword" required>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn">Iniciar Sesión</button>
+            <button type="button" class="btn btn-outline" id="create-account-btn">Crear Cuenta</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- About View -->
+    <div id="about-view" class="view">
+      <div class="hero">
+        <h1>Sobre Talento Local</h1>
+        <p>Líder indiscutido en la conexión de talento profesional con oportunidades de alto valor.</p>
+      </div>
+      <div style="background: linear-gradient(135deg, white 0%, #f8fafc 100%); padding: 40px; border-radius: var(--radius); box-shadow: var(--shadow-lg); border: 1px solid rgba(0,0,0,0.05);">
+        <p style="font-size: 1.2rem; color: var(--gray-600); margin-bottom: 24px; line-height: 1.8;">
+          <strong>Talento Local</strong> es la plataforma de referencia nacional para profesionales independientes y empresas que buscan excelencia en servicios y productos. 
+          Fundada con la misión de elevar el estándar del trabajo profesional en el país, hemos construido un ecosistema donde el talento se encuentra con las mejores oportunidades.
+        </p>
+        <p style="font-size: 1.2rem; color: var(--gray-600); line-height: 1.8;">
+          Nuestra tecnología de geolocalización inteligente, combinada con un riguroso proceso de verificación, garantiza que cada conexión sea de la más alta calidad, 
+          posicionándonos como la empresa líder en nuestro sector a nivel nacional.
+        </p>
+      </div>
+    </div>
+
+    <!-- Modal de Términos -->
+    <div id="terms-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10000; justify-content: center; align-items: center;">
+      <div style="background: white; border-radius: var(--radius); max-width: 700px; width: 90%; padding: 32px; box-shadow: var(--shadow-lg); position: relative;">
+        <h2 id="terms-modal-title" style="font-size: 1.8rem; margin-bottom: 24px; color: var(--primary-dark);">Aceptación de Términos y Condiciones</h2>
+        <div style="background: #f8fafc; padding: 20px; border-radius: 12px; border-left: 4px solid var(--secondary); margin-bottom: 24px; font-size: 1rem; line-height: 1.6;">
+          <p>Al hacer clic en "Crear Cuenta", usted confirma que ha leído y aceptado los Términos de Servicio y la Política de Privacidad de Talento Local.</p>
+          <hr style="margin: 20px 0; border: 0; border-top: 2px solid #fee2e2;">
+          <p style="color: #dc2626; font-weight: 600;">⚠️ <strong>CLÁUSULA DE LIMITACIÓN DE RESPONSABILIDAD</strong></p>
+          <p>Declara y acepta que Talento Local actúa exclusivamente como un <strong>intermediario tecnológico</strong> para la gestión de reservas y el procesamiento de pagos. En consecuencia, <strong>Talento Local NO se hace responsable</strong> de:</p>
+          <ol style="padding-left: 20px; margin: 12px 0;">
+            <li><strong>Calidad del Servicio:</strong> La <strong>calidad, ejecución, resultado, o cualquier daño o perjuicio</strong> derivado del servicio prestado por el profesional (peluquero, barbero, estilista, etc.).</li>
+            <li><strong>Transacciones de Pago:</strong> Cualquier <strong>disputa, error, demora, rechazo de pago o contracargo</strong> que sea responsabilidad directa de la <strong>Pasarela de Pago</strong> (Mercado Pago, Naranja X, u otras entidades financieras).</li>
+            <li><strong>Incumplimiento del Profesional:</strong> Los <strong>incumplimientos, cancelaciones de último momento, errores de agenda o cambios en la disponibilidad</strong> por parte del profesional.</li>
+            <li><strong>Información Publicada:</strong> La <strong>veracidad y exactitud</strong> de la información (precios, horarios, credenciales, imágenes, etc.) publicada por el profesional en su perfil.</li>
+          </ol>
+          <p>Al aceptar, el profesional asume la responsabilidad total y directa ante el cliente por la prestación de sus servicios.</p>
+        </div>
+        <label style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 24px;">
+          <input type="checkbox" id="terms-checkbox" required>
+          <span id="terms-checkbox-label">Acepto los términos y confirmo que Talento Local actúa solo como intermediario tecnológico.</span>
+        </label>
+        <div style="display: flex; gap: 16px; justify-content: flex-end;">
+          <button class="btn btn-outline" onclick="document.getElementById('terms-modal').style.display='none'">Cancelar</button>
+          <button class="btn" id="accept-terms-btn">Crear Cuenta</button>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <p>&copy; 2025 Talento Local. Empresa Líder Nacional en Conexión de Talentos Profesionales.</p>
+    </footer>
+  </div>
+
+  <script>
+    // ========================================
+    // CONFIGURACIÓN DE FIREBASE
+    // ========================================
+    const firebaseConfig = {
+      apiKey: 'YOUR_API_KEY_HERE',
+      authDomain: 'your-project.firebaseapp.com',
+      projectId: 'your-project',
+      storageBucket: 'your-project.appspot.com',
+      messagingSenderId: '123456789',
+      appId: '1:123456789:web:abcdef123456789'
+    };
+    let db, auth, storage;
+    try {
+      firebase.initializeApp(firebaseConfig);
+      db = firebase.firestore();
+      auth = firebase.auth();
+      storage = firebase.storage();
+    } catch (error) {
+      console.warn('Firebase not initialized:', error);
+    }
+
+    // === SISTEMA DE IDIOMAS ===
+    const translations = {
+      es: {
+        heroTitle: "La Plataforma Definitiva para Talentos Profesionales",
+        heroSubtitle: "Conectamos a los mejores profesionales con oportunidades reales en todo el país.",
+        searchPlaceholder: "Buscar por profesión, nombre o especialidad...",
+        defineZone: "Defina su Zona de Operaciones",
+        clickMap: "<strong>Haga clic</strong> en el mapa para establecer el centro de su área de servicio",
+        adjustRadius: "<strong>Ajuste el radio</strong> utilizando los controles para definir su cobertura geográfica",
+        smartSystem: "<strong>El sistema inteligente</strong> mostrará su disponibilidad en tiempo real a clientes potenciales",
+        location: "Ubicación:",
+        radius: "Radio de cobertura:",
+        notDefined: "No definida",
+        meters: "metros",
+        reduce: "Reducir Radio",
+        expand: "Ampliar Radio",
+        joinElite: "Únase a la Red de Élite",
+        joinDesc: "Registre su perfil profesional y acceda a oportunidades exclusivas en todo el territorio nacional.",
+        fullName: "Nombre Completo *",
+        profession: "Especialidad Profesional *",
+        phone: "Teléfono Corporativo *",
+        email: "Correo Profesional *",
+        profileDesc: "Perfil Profesional (opcional)",
+        profileDescPlaceholder: "Describa su experiencia, certificaciones y enfoque profesional...",
+        defineLocationBtn: "Definir Ubicación",
+        registerBtn: "Registrar Perfil Profesional",
+        loginTitle: "Iniciar Sesión en Talento Local",
+        loginDesc: "Acceda a su perfil profesional y gestione sus servicios y productos.",
+        loginEmail: "Correo Electrónico *",
+        loginPassword: "Contraseña *",
+        loginBtn: "Iniciar Sesión",
+        createAccount: "Crear Cuenta",
+        termsTitle: "Aceptación de Términos y Condiciones",
+        termsAccept: "Acepto los términos y confirmo que Talento Local actúa solo como intermediario tecnológico.",
+        createAccountBtn: "Crear Cuenta"
+      },
+      en: {
+        heroTitle: "The Ultimate Platform for Professional Talent",
+        heroSubtitle: "We connect top professionals with real opportunities nationwide.",
+        searchPlaceholder: "Search by profession, name, or specialty...",
+        defineZone: "Define Your Service Area",
+        clickMap: "<strong>Click</strong> on the map to set the center of your service area",
+        adjustRadius: "<strong>Adjust the radius</strong> using the controls to define your coverage",
+        smartSystem: "<strong>The smart system</strong> will show your real-time availability to potential clients",
+        location: "Location:",
+        radius: "Coverage radius:",
+        notDefined: "Not defined",
+        meters: "meters",
+        reduce: "Reduce Radius",
+        expand: "Expand Radius",
+        joinElite: "Join the Elite Network",
+        joinDesc: "Register your professional profile and access exclusive opportunities nationwide.",
+        fullName: "Full Name *",
+        profession: "Professional Specialty *",
+        phone: "Corporate Phone *",
+        email: "Professional Email *",
+        profileDesc: "Professional Profile (optional)",
+        profileDescPlaceholder: "Describe your experience, certifications, and professional approach...",
+        defineLocationBtn: "Set Location",
+        registerBtn: "Register Professional Profile",
+        loginTitle: "Sign in to Talento Local",
+        loginDesc: "Access your professional profile and manage your services and products.",
+        loginEmail: "Email Address *",
+        loginPassword: "Password *",
+        loginBtn: "Sign In",
+        createAccount: "Create Account",
+        termsTitle: "Acceptance of Terms and Conditions",
+        termsAccept: "I accept the terms and confirm that Talento Local acts solely as a technology intermediary.",
+        createAccountBtn: "Create Account"
+      },
+      pt: {
+        heroTitle: "A Plataforma Definitiva para Talentos Profissionais",
+        heroSubtitle: "Conectamos os melhores profissionais a oportunidades reais em todo o país.",
+        searchPlaceholder: "Buscar por profissão, nome ou especialidade...",
+        defineZone: "Defina Sua Área de Atuação",
+        clickMap: "<strong>Clique</strong> no mapa para definir o centro da sua área de serviço",
+        adjustRadius: "<strong>Ajuste o raio</strong> usando os controles para definir sua cobertura",
+        smartSystem: "<strong>O sistema inteligente</strong> mostrará sua disponibilidade em tempo real para clientes em potencial",
+        location: "Localização:",
+        radius: "Raio de cobertura:",
+        notDefined: "Não definida",
+        meters: "metros",
+        reduce: "Reduzir Raio",
+        expand: "Ampliar Raio",
+        joinElite: "Junte-se à Rede de Elite",
+        joinDesc: "Registre seu perfil profissional e acesse oportunidades exclusivas em todo o território nacional.",
+        fullName: "Nome Completo *",
+        profession: "Especialidade Profissional *",
+        phone: "Telefone Corporativo *",
+        email: "E-mail Profissional *",
+        profileDesc: "Perfil Profissional (opcional)",
+        profileDescPlaceholder: "Descreva sua experiência, certificações e abordagem profissional...",
+        defineLocationBtn: "Definir Localização",
+        registerBtn: "Registrar Perfil Profissional",
+        loginTitle: "Entrar no Talento Local",
+        loginDesc: "Acesse seu perfil profissional e gerencie seus serviços e produtos.",
+        loginEmail: "E-mail *",
+        loginPassword: "Senha *",
+        loginBtn: "Entrar",
+        createAccount: "Criar Conta",
+        termsTitle: "Aceitação dos Termos e Condições",
+        termsAccept: "Aceito os termos e confirmo que o Talento Local atua apenas como intermediário tecnológico.",
+        createAccountBtn: "Criar Conta"
+      }
+    };
+
+    let currentLang = 'es';
+
+    function translatePage(lang) {
+      currentLang = lang;
+      const t = translations[lang];
+
+      // Home
+      document.querySelector('#home-view .hero h1').innerHTML = t.heroTitle;
+      document.querySelector('#home-view .hero p').innerHTML = t.heroSubtitle;
+      document.getElementById('search-input').placeholder = t.searchPlaceholder;
+      document.querySelector('.instructions h3').textContent = t.defineZone;
+      const instrItems = document.querySelectorAll('.instructions li');
+      instrItems[0].innerHTML = t.clickMap;
+      instrItems[1].innerHTML = t.adjustRadius;
+      instrItems[2].innerHTML = t.smartSystem;
+      document.querySelectorAll('#location-coords, #form-location').forEach(el => {
+        if (!mapData.location) el.textContent = t.notDefined;
+      });
+      document.querySelectorAll('#coverage-radius, #form-radius').forEach(el => {
+        if (mapData.radius === 0) el.textContent = '0';
+      });
+      const mapInfoPs = document.querySelectorAll('.map-info p');
+      if (mapInfoPs[0]) mapInfoPs[0].innerHTML = `<strong>${t.location}</strong> <span id="location-coords">${mapData.location ? ol.proj.toLonLat(mapData.location).map(c => c.toFixed(4)).reverse().join('°, ') + '°' : t.notDefined}</span>`;
+      if (mapInfoPs[1]) mapInfoPs[1].innerHTML = `<strong>${t.radius}</strong> <span id="coverage-radius">${mapData.radius || 0}</span> ${t.meters}`;
+      document.getElementById('decreaseRadius').textContent = t.reduce;
+      document.getElementById('increaseRadius').textContent = t.expand;
+
+      // Register
+      document.querySelector('#register-view .hero h1').textContent = t.joinElite;
+      document.querySelector('#register-view .hero p').textContent = t.joinDesc;
+      document.querySelector('[for="fullName"]').textContent = t.fullName;
+      document.querySelector('[for="profession"]').textContent = t.profession;
+      document.querySelector('[for="phone"]').textContent = t.phone;
+      document.querySelector('[for="email"]').textContent = t.email;
+      document.querySelector('[for="description"]').textContent = t.profileDesc;
+      document.getElementById('description').placeholder = t.profileDescPlaceholder;
+      document.getElementById('define-location-btn').textContent = t.defineLocationBtn;
+      document.querySelector('#talentForm .btn').textContent = t.registerBtn;
+
+      // Login
+      document.querySelector('#login-view .hero h1').textContent = t.loginTitle;
+      document.querySelector('#login-view .hero p').textContent = t.loginDesc;
+      document.querySelector('[for="loginEmail"]').textContent = t.loginEmail;
+      document.querySelector('[for="loginPassword"]').textContent = t.loginPassword;
+      document.querySelector('#loginForm .btn').textContent = t.loginBtn;
+      document.getElementById('create-account-btn').textContent = t.createAccount;
+
+      // Update terms modal if open
+      const termsTitle = document.getElementById('terms-modal-title');
+      const termsCheckboxLabel = document.getElementById('terms-checkbox-label');
+      const termsAcceptBtn = document.getElementById('accept-terms-btn');
+      if (termsTitle) termsTitle.textContent = t.termsTitle;
+      if (termsCheckboxLabel) termsCheckboxLabel.textContent = t.termsAccept;
+      if (termsAcceptBtn) termsAcceptBtn.textContent = t.createAccountBtn;
+
+      localStorage.setItem('tl-lang', lang);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const savedLang = localStorage.getItem('tl-lang') || 'es';
+      document.getElementById('lang-select').value = savedLang;
+      translatePage(savedLang);
+    });
+
+    document.getElementById('lang-select').addEventListener('change', (e) => {
+      translatePage(e.target.value);
+    });
+
+    // ========================================
+    // RESTO DE TU CÓDIGO EXISTENTE (sin cambios)
+    // ========================================
+    let mapData = {
+      location: null,
+      radius: 0
+    };
+    let map = null;
+    let mapInitialized = false;
+    let pointFeature = null;
+    let circleFeature = null;
+    let vectorSource = null;
+    let currentRadius = 0;
+    let currentUser = null;
+
+    function initializeMap() {
+      if (mapInitialized) return;
+      vectorSource = new ol.source.Vector();
+      const vectorLayer = new ol.layer.Vector({
+        source: vectorSource,
+        style: function(feature) {
+          const geometryType = feature.getGeometry().getType();
+          if (geometryType === 'Point') {
+            return new ol.style.Style({
+              image: new ol.style.Circle({
+                radius: 14,
+                fill: new ol.style.Fill({ color: 'rgba(14, 165, 233, 0.95)' }),
+                stroke: new ol.style.Stroke({ color: '#ffffff', width: 3 })
+              })
+            });
+          } else if (geometryType === 'Polygon') {
+            return new ol.style.Style({
+              fill: new ol.style.Fill({ color: 'rgba(14, 165, 233, 0.12)' }),
+              stroke: new ol.style.Stroke({ color: '#0ea5e9', width: 3 })
+            });
+          }
+        }
+      });
+      map = new ol.Map({
+        target: 'map',
+        layers: [
+          new ol.layer.Tile({
+            source: new ol.source.OSM()
+          }),
+          vectorLayer
+        ],
+        view: new ol.View({
+          center: ol.proj.fromLonLat([-58.3816, -34.6037]),
+          zoom: 12
+        })
+      });
+      map.on('click', function(evt) {
+        const coordinate = evt.coordinate;
+        createOrUpdateMarker(coordinate);
+        enableRadiusControls();
+      });
+      mapInitialized = true;
+    }
+
+    function createOrUpdateMarker(coordinate) {
+      if (pointFeature) vectorSource.removeFeature(pointFeature);
+      if (circleFeature) vectorSource.removeFeature(circleFeature);
+      pointFeature = new ol.Feature({
+        geometry: new ol.geom.Point(coordinate)
+      });
+      vectorSource.addFeature(pointFeature);
+      if (currentRadius > 0) {
+        updateCircle(coordinate, currentRadius);
+        document.getElementById('radio-display').classList.add('active');
+      } else {
+        document.getElementById('radio-display').classList.remove('active');
+      }
+      updateMapInfo(coordinate, currentRadius);
+      mapData.location = coordinate;
+      mapData.radius = currentRadius;
+    }
+
+    function updateCircle(center, radiusInMeters) {
+      const center4326 = ol.proj.toLonLat(center);
+      const earthRadius = 6378137;
+      const numPoints = 64;
+      const circleCoords = [];
+      for (let i = 0; i <= numPoints; i++) {
+        const angle = (i * 2 * Math.PI) / numPoints;
+        const dx = radiusInMeters * Math.cos(angle);
+        const dy = radiusInMeters * Math.sin(angle);
+        const deltaLon = (dx / earthRadius) * (180 / Math.PI) / Math.cos(center4326[1] * Math.PI / 180);
+        const deltaLat = (dy / earthRadius) * (180 / Math.PI);
+        const pointLon = center4326[0] + deltaLon;
+        const pointLat = center4326[1] + deltaLat;
+        circleCoords.push(ol.proj.fromLonLat([pointLon, pointLat]));
+      }
+      const circlePolygon = new ol.geom.Polygon([circleCoords]);
+      circleFeature = new ol.Feature({
+        geometry: circlePolygon
+      });
+      vectorSource.addFeature(circleFeature);
+    }
+
+    function updateMapInfo(coordinate, radius) {
+      const lonLat = ol.proj.toLonLat(coordinate);
+      document.getElementById('location-coords').textContent = `${lonLat[1].toFixed(4)}°, ${lonLat[0].toFixed(4)}°`;
+      document.getElementById('coverage-radius').textContent = Math.round(radius);
+      document.getElementById('radio-value').textContent = Math.round(radius);
+      const formLocation = document.getElementById('form-location');
+      const formRadius = document.getElementById('form-radius');
+      if (formLocation && formRadius) {
+        formLocation.textContent = `${lonLat[1].toFixed(4)}°, ${lonLat[0].toFixed(4)}°`;
+        formRadius.textContent = Math.round(radius);
+      }
+    }
+
+    function enableRadiusControls() {
+      const decreaseBtn = document.getElementById('decreaseRadius');
+      const increaseBtn = document.getElementById('increaseRadius');
+      if (decreaseBtn && increaseBtn) {
+        decreaseBtn.disabled = false;
+        increaseBtn.disabled = false;
+      }
+    }
+
+    function adjustRadius(delta) {
+      if (!pointFeature) return;
+      currentRadius = Math.max(0, currentRadius + delta);
+      const coord = pointFeature.getGeometry().getCoordinates();
+      if (circleFeature) {
+        vectorSource.removeFeature(circleFeature);
+        circleFeature = null;
+      }
+      if (currentRadius > 0) {
+        updateCircle(coord, currentRadius);
+        const radioDisplay = document.getElementById('radio-display');
+        if (radioDisplay) radioDisplay.classList.add('active');
+      } else {
+        const radioDisplay = document.getElementById('radio-display');
+        if (radioDisplay) radioDisplay.classList.remove('active');
+      }
+      updateMapInfo(coord, currentRadius);
+      mapData.location = coord;
+      mapData.radius = currentRadius;
+    }
+
+    function initAuthListener() {
+      if (!auth) return;
+      auth.onAuthStateChanged(user => {
+        currentUser = user;
+        updateUIBasedOnAuthState(user);
+      });
+    }
+
+    async function login(email, password) {
+      if (!auth) {
+        alert('Funcionalidad de autenticación no disponible en este entorno.');
+        return;
+      }
+      try {
+        const userCredential = await auth.signInWithEmailAndPassword(email, password);
+        currentUser = userCredential.user;
+        return userCredential.user;
+      } catch (error) {
+        alert('Error en el inicio de sesión: ' + error.message);
+        throw error;
+      }
+    }
+
+    async function register(email, password) {
+      if (!auth) {
+        alert('Funcionalidad de registro no disponible en este entorno.');
+        return;
+      }
+      try {
+        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        currentUser = userCredential.user;
+        return userCredential.user;
+      } catch (error) {
+        alert('Error en el registro: ' + error.message);
+        throw error;
+      }
+    }
+
+    function logout() {
+      if (!auth) return;
+      auth.signOut().then(() => {
+        currentUser = null;
+        updateUIBasedOnAuthState(null);
+        navigateTo('home');
+      });
+    }
+
+    async function createTalent(talentData, userId) {
+      if (!db) {
+        alert('Base de datos no disponible. Guardando localmente...');
+        localStorage.setItem('talentData', JSON.stringify(talentData));
+        return 'local';
+      }
+      const talent = {
+        ...talentData,
+        userId: userId,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        verification: {
+          email: true,
+          phone: false,
+          id: false,
+          portfolio: false,
+          level: 'basic'
+        },
+        boostExpiry: null,
+        isPremium: false
+      };
+      const docRef = await db.collection('talents').add(talent);
+      return docRef.id;
+    }
+
+    async function getTalentByUserId(userId) {
+      if (!db) {
+        const localData = localStorage.getItem('talentData');
+        if (localData) {
+          return JSON.parse(localData);
+        }
+        return null;
+      }
+      const snapshot = await db.collection('talents').where('userId', '==', userId).limit(1).get();
+      if (snapshot.empty) return null;
+      const doc = snapshot.docs[0];
+      return { id: doc.id, ...doc.data() };
+    }
+
+    async function getAllTalents() {
+      if (!db) {
+        return [
+          { fullName: 'Ana López', profession: 'Diseñadora Gráfica Premium', id: '1' },
+          { fullName: 'Carlos Méndez', profession: 'Carpintería de Alta Gama', id: '2' },
+          { fullName: 'Lucía Gómez', profession: 'Gastronomía de Autor', id: '3' }
+        ];
+      }
+      const snapshot = await db.collection('talents').get();
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    }
+
+    function navigateTo(viewName) {
+      const views = document.querySelectorAll('.view');
+      views.forEach(el => el.classList.remove('active'));
+      const targetView = document.getElementById(`${viewName}-view`);
+      if (targetView) targetView.classList.add('active');
+      const navLinks = document.querySelectorAll('.nav-link');
+      navLinks.forEach(link => link.classList.remove('active'));
+      const activeLink = document.getElementById(`nav-${viewName}`);
+      if (activeLink) activeLink.classList.add('active');
+      if (viewName === 'home' && !mapInitialized) {
+        initializeMap();
+      }
+    }
+
+    function updateUIBasedOnAuthState(user) {
+      const profileLink = document.getElementById('nav-profile');
+      const loginLink = document.getElementById('nav-login');
+      if (user && profileLink && loginLink) {
+        profileLink.style.display = 'block';
+        loginLink.style.display = 'none';
+        loadProfileData();
+      } else if (profileLink && loginLink) {
+        profileLink.style.display = 'none';
+        loginLink.style.display = 'block';
+      }
+    }
+
+    function loadProfileData() {
+      if (!currentUser) return;
+      getTalentByUserId(currentUser.uid).then(talent => {
+        if (talent) {
+          const profileName = document.getElementById('profile-name');
+          const profileEmail = document.getElementById('profile-email');
+          const profileFullName = document.getElementById('profileFullName');
+          const profileProfession = document.getElementById('profileProfession');
+          const profilePhone = document.getElementById('profilePhone');
+          const profileDescription = document.getElementById('profileDescription');
+          if (profileName) profileName.textContent = talent.fullName;
+          if (profileEmail) profileEmail.textContent = currentUser.email || 'email@profesional.com';
+          if (profileFullName) profileFullName.value = talent.fullName;
+          if (profileProfession) profileProfession.value = talent.profession;
+          if (profilePhone) profilePhone.value = talent.phone;
+          if (profileDescription) profileDescription.value = talent.description || '';
+        }
+      }).catch(console.error);
+    }
+
+    // === MODAL DE TÉRMINOS ===
+    document.addEventListener('DOMContentLoaded', () => {
+      initAuthListener();
+
+      // Reemplazar el comportamiento del botón "Crear Cuenta"
+      const createAccountBtn = document.getElementById('create-account-btn');
+      if (createAccountBtn) {
+        createAccountBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          document.getElementById('terms-modal').style.display = 'flex';
+        });
+      }
+
+      // Aceptar términos
+      const acceptTermsBtn = document.getElementById('accept-terms-btn');
+      if (acceptTermsBtn) {
+        acceptTermsBtn.addEventListener('click', () => {
+          if (!document.getElementById('terms-checkbox').checked) {
+            alert('Debe aceptar los términos y condiciones para continuar.');
+            return;
+          }
+          document.getElementById('terms-modal').style.display = 'none';
+          navigateTo('register');
+        });
+      }
+
+      // Resto de listeners originales...
+      const navLinks = document.querySelectorAll('.nav-link');
+      navLinks.forEach(link => {
+        if (link) {
+          link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const viewName = this.id.replace('nav-', '');
+            navigateTo(viewName);
+          });
+        }
+      });
+
+      const decreaseRadiusBtn = document.getElementById('decreaseRadius');
+      const increaseRadiusBtn = document.getElementById('increaseRadius');
+      if (decreaseRadiusBtn && increaseRadiusBtn) {
+        decreaseRadiusBtn.addEventListener('click', () => adjustRadius(-200));
+        increaseRadiusBtn.addEventListener('click', () => adjustRadius(200));
+      }
+
+      const defineLocationBtn = document.getElementById('define-location-btn');
+      if (defineLocationBtn) {
+        defineLocationBtn.addEventListener('click', () => navigateTo('home'));
+      }
+
+      const logoutBtn = document.getElementById('logout-btn');
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => logout());
+      }
+
+      const boost7Btn = document.getElementById('boost-7');
+      const boost30Btn = document.getElementById('boost-30');
+      if (boost7Btn) boost7Btn.addEventListener('click', () => purchaseBoost(7));
+      if (boost30Btn) boost30Btn.addEventListener('click', () => purchaseBoost(30));
+
+      const talentForm = document.getElementById('talentForm');
+      if (talentForm) {
+        talentForm.addEventListener('submit', async function(e) {
+          e.preventDefault();
+          if (!mapData.location) {
+            alert('Por favor, defina su ubicación en el mapa antes de registrar.');
+            return;
+          }
+          const formData = new FormData(this);
+          const talentData = {
+            fullName: formData.get('fullName'),
+            profession: formData.get('profession'),
+            phone: formData.get('phone'),
+            email: formData.get('email'),
+            description: formData.get('description'),
+            location: {
+              lat: ol.proj.toLonLat(mapData.location)[1],
+              lng: ol.proj.toLonLat(mapData.location)[0]
+            },
+            radius: mapData.radius
+          };
+          try {
+            const userId = currentUser ? currentUser.uid : 'anonymous';
+            await createTalent(talentData, userId);
+            alert('¡Perfil registrado exitosamente!');
+          } catch (error) {
+            console.error('Error:', error);
+            alert('Error al registrar el perfil.');
+          }
+        });
+      }
+
+      const loginForm = document.getElementById('loginForm');
+      if (loginForm) {
+        loginForm.addEventListener('submit', async function(e) {
+          e.preventDefault();
+          const email = document.getElementById('loginEmail').value;
+          const password = document.getElementById('loginPassword').value;
+          try {
+            await login(email, password);
+            navigateTo('profile');
+          } catch (error) {
+            console.error('Login error:', error);
+          }
+        });
+      }
+
+      const profileForm = document.getElementById('profileForm');
+      if (profileForm) {
+        profileForm.addEventListener('submit', async function(e) {
+          e.preventDefault();
+          if (!currentUser) return;
+          const profileData = {
+            fullName: document.getElementById('profileFullName').value,
+            profession: document.getElementById('profileProfession').value,
+            phone: document.getElementById('profilePhone').value,
+            description: document.getElementById('profileDescription').value
+          };
+          try {
+            await db.collection('talents').doc(currentUser.uid).update(profileData);
+            alert('Perfil actualizado exitosamente');
+          } catch (error) {
+            console.error('Error updating profile:', error);
+            alert('Error al actualizar el perfil.');
+          }
+        });
+      }
+
+      initializeMap();
+    });
+
+    window.navigateTo = navigateTo;
+    window.logout = logout;
+    window.requestVerification = () => alert('Funcionalidad de verificación: En una implementación real, esto iniciaría un flujo de verificación...');
+
+    function purchaseBoost(days) {
+      alert(`Funcionalidad de promoción: En una implementación real, esto activaría una promoción de ${days} días con cobro automático.`);
+    }
+
+    // === FUNCIÓN PARA COMISIÓN DEL 6% ===
+    function processPayment(amount, talentId, type = 'service') {
+      const commissionRate = 0.06;
+      const commission = amount * commissionRate;
+      const talentPayout = amount - commission;
+
+      // Aquí integrarías tu backend real
+      fetch('/api/process-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount,
+          commission,
+          talentPayout,
+          talentId,
+          type,
+          currency: 'ARS' // Cambia según región: 'MXN', 'BRL', etc.
+        })
+      }).then(res => {
+        if (res.ok) {
+          alert('Pago procesado con éxito. Comisión del 6% aplicada.');
+        } else {
+          alert('Error al procesar el pago.');
+        }
+      }).catch(err => {
+        console.error('Error en pago:', err);
+        alert('Error de conexión.');
+      });
+    }
+  </script>
+</body>
+  </html>
